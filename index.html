@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>消化器外科 患者管理アプリ 自動暗号化版</title>
+<style>
+body{margin:0;background:#f5f7fb;color:#1f2937;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic",sans-serif}
+header{background:white;border-bottom:1px solid #e5e7eb;padding:16px 20px;position:sticky;top:0;z-index:10}
+h1{font-size:21px;margin:0}h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}
+.sub,.small{font-size:12px;color:#6b7280;margin-top:4px;line-height:1.45}
+main{max-width:1720px;margin:0 auto;padding:16px;display:grid;grid-template-columns:500px 1fr;gap:16px}
+.panel{background:white;border:1px solid #e5e7eb;border-radius:14px;padding:16px;box-shadow:0 2px 8px #00000008}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.span{grid-column:1/-1}
+label{display:block;font-size:13px;color:#6b7280;margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px;box-sizing:border-box;background:white}
+textarea{min-height:64px;resize:vertical}
+button{border:0;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;background:#2563eb;color:white;margin-top:10px}
+button.gray{background:#4b5563}button.red{background:#dc2626}button.green{background:#059669}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.toolbar input,.toolbar select{flex:1;min-width:150px}
+.list{display:grid;gap:10px;max-height:76vh;overflow:auto;padding-right:4px}
+.card{border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:white;cursor:pointer}
+.card:hover{border-color:#2563eb}.active{outline:2px solid #2563eb}
+.name{font-weight:800;font-size:16px}.meta{font-size:13px;color:#6b7280;margin-top:4px}
+.badge{display:inline-block;color:white;border-radius:999px;padding:3px 8px;font-size:12px;margin:8px 4px 0 0}
+.急性期{background:#dc2626}.術後{background:#d97706}.退院調整{background:#059669}.安定{background:#6b7280}
+.pod{background:#7c3aed}.alert{background:#dc2626}.ok{background:#059669}.info{background:#2563eb}
+.detail{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px}
+.box{border:1px solid #e5e7eb;border-radius:12px;padding:14px;background:white}
+.pre{white-space:pre-wrap;line-height:1.55;font-size:14px}
+.empty{text-align:center;color:#6b7280;padding:40px 10px}
+.memo{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;white-space:pre-wrap;font-size:14px;line-height:1.6}
+.sec{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;margin-top:10px;color:#374151}
+.warn{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px;font-size:12px;line-height:1.5;margin-top:10px;color:#7f1d1d}
+.hidden{display:none}
+.labrow{display:grid;grid-template-columns:1fr 1fr 48px;gap:8px;align-items:end;margin-top:6px}.labrow button{margin:0;background:#dc2626}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.calhead{font-size:12px;text-align:center;color:#6b7280;font-weight:700}
+.day{min-height:88px;border:1px solid #e5e7eb;border-radius:10px;background:white;padding:6px;font-size:12px}.daynum{font-weight:800;margin-bottom:4px}
+.event{display:block;border-radius:6px;padding:2px 4px;margin-top:3px;color:white;font-size:11px;line-height:1.25}
+.ev-lab{background:#dc2626}.ev-op{background:#7c3aed}.ev-dis{background:#059669}.ev-test{background:#2563eb}
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}.calnav button{margin:0}
+@media(max-width:1000px){main{grid-template-columns:1fr}.detail{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.span{grid-column:auto}}
+</style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="患者管理">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<header>
+<h1>消化器外科 患者管理アプリ 自動暗号化版</h1>
+<div class="sub">ログインなし・自動暗号化・院内共有なし・端末ブラウザ内保存</div>
+</header>
+
+<main>
+<section class="panel">
+<h2>患者登録 / 編集</h2>
+<input type="hidden" id="editId">
+<div class="grid">
+<div class="span"><label>患者名またはID</label><input id="name" placeholder="例：ID001 / A氏"></div>
+<div><label>性別</label><select id="sex" onchange="calculateCrCl()"><option value="">未選択</option><option>男性</option><option>女性</option><option>その他</option></select></div>
+<div><label>年齢</label><select id="age" onchange="calculateCrCl()"><option value="">未選択</option><option>0歳</option>
+<option>1歳</option>
+<option>2歳</option>
+<option>3歳</option>
+<option>4歳</option>
+<option>5歳</option>
+<option>6歳</option>
+<option>7歳</option>
+<option>8歳</option>
+<option>9歳</option>
+<option>10歳</option>
+<option>11歳</option>
+<option>12歳</option>
+<option>13歳</option>
+<option>14歳</option>
+<option>15歳</option>
+<option>16歳</option>
+<option>17歳</option>
+<option>18歳</option>
+<option>19歳</option>
+<option>20歳</option>
+<option>21歳</option>
+<option>22歳</option>
+<option>23歳</option>
+<option>24歳</option>
+<option>25歳</option>
+<option>26歳</option>
+<option>27歳</option>
+<option>28歳</option>
+<option>29歳</option>
+<option>30歳</option>
+<option>31歳</option>
+<option>32歳</option>
+<option>33歳</option>
+<option>34歳</option>
+<option>35歳</option>
+<option>36歳</option>
+<option>37歳</option>
+<option>38歳</option>
+<option>39歳</option>
+<option>40歳</option>
+<option>41歳</option>
+<option>42歳</option>
+<option>43歳</option>
+<option>44歳</option>
+<option>45歳</option>
+<option>46歳</option>
+<option>47歳</option>
+<option>48歳</option>
+<option>49歳</option>
+<option>50歳</option>
+<option>51歳</option>
+<option>52歳</option>
+<option>53歳</option>
+<option>54歳</option>
+<option>55歳</option>
+<option>56歳</option>
+<option>57歳</option>
+<option>58歳</option>
+<option>59歳</option>
+<option>60歳</option>
+<option>61歳</option>
+<option>62歳</option>
+<option>63歳</option>
+<option>64歳</option>
+<option>65歳</option>
+<option>66歳</option>
+<option>67歳</option>
+<option>68歳</option>
+<option>69歳</option>
+<option>70歳</option>
+<option>71歳</option>
+<option>72歳</option>
+<option>73歳</option>
+<option>74歳</option>
+<option>75歳</option>
+<option>76歳</option>
+<option>77歳</option>
+<option>78歳</option>
+<option>79歳</option>
+<option>80歳</option>
+<option>81歳</option>
+<option>82歳</option>
+<option>83歳</option>
+<option>84歳</option>
+<option>85歳</option>
+<option>86歳</option>
+<option>87歳</option>
+<option>88歳</option>
+<option>89歳</option>
+<option>90歳</option>
+<option>91歳</option>
+<option>92歳</option>
+<option>93歳</option>
+<option>94歳</option>
+<option>95歳</option>
+<option>96歳</option>
+<option>97歳</option>
+<option>98歳</option>
+<option>99歳</option>
+<option>100歳</option>
+<option>101歳</option>
+<option>102歳</option>
+<option>103歳</option>
+<option>104歳</option>
+<option>105歳</option>
+<option>106歳</option>
+<option>107歳</option>
+<option>108歳</option>
+<option>109歳</option>
+<option>110歳</option>
+<option>111歳</option>
+<option>112歳</option>
+<option>113歳</option>
+<option>114歳</option>
+<option>115歳</option>
+<option>116歳</option>
+<option>117歳</option>
+<option>118歳</option>
+<option>119歳</option>
+<option>120歳</option></select></div>
+
+<div><label>紹介元</label><input id="referralSource" list="referralHistory" placeholder="直接入力または履歴から選択"><datalist id="referralHistory"></datalist></div>
+<div><label>かかりつけ</label><input id="familyDoctor" list="familyDoctorHistory" placeholder="直接入力または履歴から選択"><datalist id="familyDoctorHistory"></datalist></div>
+
+<div class="span"><label>主病名</label><input id="diagnosis" list="diagnosisHistory" oninput="toggleCancerFields()" placeholder="直接入力、または過去の入力歴から選択"><datalist id="diagnosisHistory"></datalist></div>
+
+<div class="span"><label>癌症例</label><select id="isCancer" onchange="toggleCancerFields()"><option>いいえ</option><option>はい</option></select></div>
+<div id="cancerFields" class="span hidden">
+<div class="grid">
+<div><label>分類</label><select id="tnmType"><option>未設定</option><option>cTNM</option><option>pTNM</option><option>ycTNM</option><option>ypTNM</option><option>rTNM</option></select></div>
+<div><label>Stage</label><select id="stage"><option>未設定</option><option>Stage 0</option><option>Stage I</option><option>Stage IA</option><option>Stage IB</option><option>Stage II</option><option>Stage IIA</option><option>Stage IIB</option><option>Stage IIC</option><option>Stage III</option><option>Stage IIIA</option><option>Stage IIIB</option><option>Stage IIIC</option><option>Stage IV</option><option>Stage IVA</option><option>Stage IVB</option></select></div>
+<div><label>T分類</label><select id="tClass"><option>TX</option><option>T0</option><option>Tis</option><option>T1</option><option>T1a</option><option>T1b</option><option>T1c</option><option>T2</option><option>T3</option><option>T4</option><option>T4a</option><option>T4b</option></select></div>
+<div><label>N分類</label><select id="nClass"><option>NX</option><option>N0</option><option>N1</option><option>N1a</option><option>N1b</option><option>N1c</option><option>N2</option><option>N2a</option><option>N2b</option><option>N3</option><option>N3a</option><option>N3b</option></select></div>
+<div><label>M分類</label><select id="mClass"><option>MX</option><option>M0</option><option>M1</option><option>M1a</option><option>M1b</option><option>M1c</option></select></div>
+<div><label>取扱い規約 / 版</label><input id="cancerRules" placeholder="例：胃癌取扱い規約 第15版"></div>
+</div>
+</div>
+
+<div class="span"><label>プロブレム</label><textarea id="problem" onblur="formatProblems()" placeholder="#1. 術後疼痛&#10;#2. 食思不振&#10;#3. 発熱精査"></textarea><div class="small">行頭が未入力なら、フォーカスを外した時に #1. #2. の形式へ整えます。</div></div>
+<div class="span"><label>既往歴</label><input id="history" list="historyList" placeholder="直接入力または履歴から選択"><datalist id="historyList"></datalist></div>
+
+<div><label>状態</label><select id="status"><option>急性期</option><option>術後</option><option>退院調整</option><option>安定</option></select></div>
+<div><label>手術日</label><input id="operationDate" type="date" onchange="toggleSurgeryFields()"></div>
+
+<div id="surgeryFields" class="span hidden">
+<div class="grid">
+<div><label>心電図</label><select id="ecgStatus"><option>未設定</option><option>予定</option><option>済</option><option>不要</option><option>要再検</option></select></div>
+<div><label>心電図 日付</label><input id="ecgDate" type="date"></div>
+<div><label>心エコー</label><select id="echoStatus"><option>未設定</option><option>予定</option><option>済</option><option>不要</option><option>要再検</option></select></div>
+<div><label>心エコー 日付</label><input id="echoDate" type="date"></div>
+<div><label>呼吸機能検査</label><select id="pftStatus"><option>未設定</option><option>予定</option><option>済</option><option>不要</option><option>要再検</option></select></div>
+<div><label>呼吸機能検査 日付</label><input id="pftDate" type="date"></div>
+</div>
+</div>
+
+<div class="span"><label>耐術能評価</label>
+<div class="grid">
+<div><label>PS</label><select id="ps"><option>未設定</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+<div><label>ASA-PS</label><select id="asa"><option>未設定</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+<div><label>ADL</label><select id="adl"><option>未設定</option><option>自立</option><option>一部介助</option><option>全介助</option></select></div>
+<div><label>フレイル</label><select id="frailty"><option>未設定</option><option>なし</option><option>軽度</option><option>中等度</option><option>高度</option></select></div>
+</div>
+<textarea id="surgicalRiskNote" placeholder="心肺機能、栄養、抗血栓薬、耐術能に関するメモ"></textarea>
+</div>
+
+<div class="span"><label>手術名 / 治療方針</label><input id="operationName" list="operationHistory" placeholder="直接入力または履歴から選択"><datalist id="operationHistory"></datalist><textarea id="plan" placeholder="治療方針・術後管理メモ"></textarea></div>
+
+<div class="span"><label>採血日程（複数可）</label><div id="labScheduleBox"></div><button class="gray" type="button" onclick="addLabSchedule()">採血日を追加</button></div>
+
+<div><label>食事</label><select id="diet"><option>未設定</option><option>絶食</option><option>飲水可</option><option>流動食</option><option>3分粥</option><option>5分粥</option><option>全粥</option><option>常食</option><option>経管栄養</option><option>TPN</option></select></div>
+<div><label>食上げ予定</label><select id="dietPlan"><option>未設定</option><option>本日食上げ</option><option>明日食上げ予定</option><option>症状次第</option><option>保留</option></select></div>
+
+<div><label>Cre（mg/dL）</label><input id="creatinine" type="number" min="0" step="0.01" oninput="calculateCrCl()" placeholder="例：0.85"></div>
+<div><label>体重（kg）</label><input id="weight" type="number" min="0" step="0.1" oninput="calculateCrCl()" placeholder="例：60"></div>
+<div><label>CrCl（mL/min）</label><input id="crcl" type="number" min="0" step="0.1" oninput="updateAntibioticDose()" placeholder="自動計算または直接入力"></div>
+<div><label>抗生剤</label><select id="antibiotics" onchange="updateAntibioticDose()">
+<option value="">未選択</option><option>CEZ</option><option>CMZ</option><option>CTRX</option><option>TAZ/PIPC</option><option>MEPM</option><option>CFPM</option><option>LVFX</option><option>VCM</option><option>その他</option>
+</select></div>
+<div class="span"><label>基本用量 / 腎機能別表示</label><textarea id="antibioticDose" placeholder="抗生剤とCrClを入力すると目安を表示"></textarea><div class="warn">CrClはCockcroft-Gault式で概算します。投与量は目安です。実際の処方は感染症、重症度、透析、TDM、施設採用薬、最新版添付文書で確認してください。</div></div>
+<div><label>抗生剤開始日</label><input id="antibioticStart" type="date"></div>
+
+<div><label>ドレーン</label><select id="drain"><option>なし</option><option>あり</option><option>抜去予定</option><option>要確認</option></select></div>
+<div><label>DVT予防</label><select id="dvt"><option>未設定</option><option>弾性ストッキング</option><option>フットポンプ</option><option>ヘパリン</option><option>DOAC</option><option>禁忌・保留</option></select></div>
+<div><label>退院予定日</label><input id="dischargeDate" type="date"></div>
+<div class="span"><label>本日のToDo</label><textarea id="todo"></textarea></div>
+<div class="span"><label>注意事項</label><textarea id="alerts"></textarea></div>
+</div>
+
+<button onclick="savePatient()">保存</button>
+<button class="gray" onclick="clearForm()">新規入力</button>
+<button class="red" onclick="deletePatient()">削除</button>
+<div class="sec">保存データは端末ブラウザ内に自動暗号化して保存されます。外部通信・院内共有はありません。</div>
+</section>
+
+<section class="panel">
+<div class="toolbar">
+<input id="search" oninput="renderList()" placeholder="検索：ID、紹介元、病名、プロブレム、TNM、Stage、既往歴、手術名">
+<select id="statusFilter" onchange="renderList()"><option value="">全状態</option><option>急性期</option><option>術後</option><option>退院調整</option><option>安定</option></select>
+<button class="green" onclick="showCalendar()">カレンダー</button>
+<button class="green" onclick="showLabList()">採血予定一覧</button>
+<button class="green" onclick="showDischargeList()">退院予定一覧</button>
+<button class="gray" onclick="exportData()">CSV出力</button>
+</div>
+<div class="list" id="patientList"></div>
+</section>
+
+<section class="panel" style="grid-column:1/-1">
+<h2>詳細</h2>
+<div id="detail" class="empty">患者カードを選択してください。</div>
+</section>
+</main>
+
+<script>
+const STORAGE_KEY="surgery_patients_auto_encrypted_v7_crcl_calc";
+const KEY_STORAGE="surgery_patients_auto_key_v1";
+let patients=[];let selectedId=null;let cryptoKey=null;let calendarDate=new Date();
+const enc=new TextEncoder();const dec=new TextDecoder();
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function val(id){return document.getElementById(id)?.value||""}
+function set(id,v){const e=document.getElementById(id);if(e)e.value=v||""}
+function b64(buffer){return btoa(String.fromCharCode(...new Uint8Array(buffer)))}
+function fromB64(str){return Uint8Array.from(atob(str),c=>c.charCodeAt(0))}
+async function getAutoKey(){let raw=localStorage.getItem(KEY_STORAGE);if(!raw){const bytes=crypto.getRandomValues(new Uint8Array(32));raw=b64(bytes);localStorage.setItem(KEY_STORAGE,raw)}return crypto.subtle.importKey("raw",fromB64(raw),{name:"AES-GCM"},false,["encrypt","decrypt"])}
+async function encryptAndSave(){const iv=crypto.getRandomValues(new Uint8Array(12));const ciphertext=await crypto.subtle.encrypt({name:"AES-GCM",iv},cryptoKey,enc.encode(JSON.stringify(patients)));localStorage.setItem(STORAGE_KEY,JSON.stringify({version:6,algorithm:"AES-GCM",iv:b64(iv),data:b64(ciphertext),updatedAt:new Date().toISOString()}))}
+async function loadPatients(){cryptoKey=await getAutoKey();const payload=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");if(!payload){patients=[];await encryptAndSave();updateHistories();renderList();return}try{const plaintext=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(payload.iv)},cryptoKey,fromB64(payload.data));patients=JSON.parse(dec.decode(plaintext))}catch(e){alert("保存データを復号できませんでした。");patients=[]}updateHistories();renderList()}
+
+function cancerLikeText(s){return /(癌|がん|ガン|腫瘍|悪性|cancer|carcinoma|sarcoma|tumor|tumour)/i.test(s||"")}
+function toggleCancerFields(){const show=val("isCancer")==="はい"||cancerLikeText(val("diagnosis"));document.getElementById("cancerFields").classList.toggle("hidden",!show);if(show&&val("isCancer")!=="はい")set("isCancer","はい")}
+function toggleSurgeryFields(){document.getElementById("surgeryFields").classList.toggle("hidden",!val("operationDate"))}
+function fillDatalist(id,values){document.getElementById(id).innerHTML=[...new Set(values.map(x=>(x||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja")).map(x=>`<option value="${escapeHtml(x)}"></option>`).join("")}
+function updateHistories(){fillDatalist("diagnosisHistory",patients.map(p=>p.diagnosis));fillDatalist("historyList",patients.map(p=>p.history));fillDatalist("operationHistory",patients.map(p=>p.operationName));fillDatalist("referralHistory",patients.map(p=>p.referralSource));fillDatalist("familyDoctorHistory",patients.map(p=>p.familyDoctor))}
+
+function formatProblems(){const raw=val("problem").split("\n").map(x=>x.trim()).filter(Boolean);if(!raw.length)return;set("problem",raw.map((line,i)=>line.match(/^#\d+\./)?line:`#${i+1}. ${line.replace(/^#?\d*[\.．]?\s*/,"")}`).join("\n"))}
+function calcDay(d,prefix,startAtOne=false){if(!d)return"";const s=new Date(d+"T00:00:00"),n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate());const diff=Math.floor((t-s)/86400000);if(diff<0)return"予定";return prefix+(startAtOne?diff+1:diff)}
+function calcPOD(d){return calcDay(d,"POD",false)}function calcAB(d){return calcDay(d,"Day",true)}
+function isToday(d){if(!d)return false;const x=new Date(d+"T00:00:00"),t=new Date();return x.getFullYear()===t.getFullYear()&&x.getMonth()===t.getMonth()&&x.getDate()===t.getDate()}
+function tnmText(p){if(p.isCancer!=="はい"&&!cancerLikeText(p.diagnosis))return"";return `${p.tnmType||"未設定"} ${p.tClass||""} ${p.nClass||""} ${p.mClass||""} / ${p.stage||"Stage未設定"}`}
+
+function addLabSchedule(date="",memo=""){const box=document.getElementById("labScheduleBox");const row=document.createElement("div");row.className="labrow";row.innerHTML=`<input type="date" class="labDateMulti" value="${escapeHtml(date)}"><input class="labMemoMulti" placeholder="例：術前採血 / POD3 / CRP確認" value="${escapeHtml(memo)}"><button type="button" onclick="this.parentElement.remove()">×</button>`;box.appendChild(row)}
+function getLabSchedules(){return[...document.querySelectorAll(".labrow")].map(r=>({date:r.querySelector(".labDateMulti").value,memo:r.querySelector(".labMemoMulti").value})).filter(x=>x.date||x.memo)}
+function setLabSchedules(items){document.getElementById("labScheduleBox").innerHTML="";const arr=Array.isArray(items)&&items.length?items:[{date:"",memo:""}];arr.forEach(x=>addLabSchedule(x.date||"",x.memo||""))}
+function labText(p){const labs=Array.isArray(p.labSchedules)?p.labSchedules:[];return labs.length?labs.map(x=>`${x.date||"日付未設定"}　${x.memo||""}`).join("\n"):"未設定"}
+function hasTodayLab(p){return(Array.isArray(p.labSchedules)?p.labSchedules:[]).some(x=>isToday(x.date))}
+
+
+function calculateCrCl(){
+ const ageText=val("age").replace("歳","");
+ const age=parseFloat(ageText);
+ const weight=parseFloat(val("weight"));
+ const scr=parseFloat(val("creatinine"));
+ const sex=val("sex");
+ if(!age||!weight||!scr){updateAntibioticDose();return;}
+ let crcl=((140-age)*weight)/(72*scr);
+ if(sex==="女性")crcl*=0.85;
+ set("crcl",crcl.toFixed(1));
+ updateAntibioticDose();
+}
+
+function doseText(drug,crcl){const c=parseFloat(crcl);let r="";
+const unknown=isNaN(c);
+if(!drug)return"";
+if(drug==="CEZ")r="基本：1g 8時間毎など。腎機能低下時は投与間隔調整を検討。";
+if(drug==="CMZ")r="基本：1g 8〜12時間毎など。腎機能低下時は投与間隔調整を検討。";
+if(drug==="CTRX")r="基本：1〜2g 24時間毎など。高度腎肝障害では注意。";
+if(drug==="TAZ/PIPC"){r="基本：4.5g 6〜8時間毎など。"; if(!unknown)r+= c>=50?" CrCl≥50：通常量目安。":c>=10?" CrCl 10〜49：減量または投与間隔延長を検討。":" CrCl<10：大幅な投与間隔延長/透析後投与を検討。";}
+if(drug==="MEPM"){r="基本：0.5〜1g 8時間毎など。"; if(!unknown)r+= c>50?" CrCl>50：通常量目安。":c>=26?" CrCl 26〜50：12時間毎目安。":c>=10?" CrCl 10〜25：半量を12時間毎目安。":" CrCl<10：半量を24時間毎目安。";}
+if(drug==="CFPM"){r="基本：1〜2g 12時間毎など。"; if(!unknown)r+= c>=60?" CrCl≥60：通常量目安。":c>=30?" CrCl 30〜59：投与間隔延長を検討。":c>=11?" CrCl 11〜29：減量/間隔延長を検討。":" CrCl≤10：大幅減量を検討。";}
+if(drug==="LVFX"){r="基本：500mg 24時間毎など。"; if(!unknown)r+= c>=50?" CrCl≥50：通常量目安。":c>=20?" CrCl 20〜49：初回後、減量/隔日等を検討。":" CrCl<20：大幅な間隔延長を検討。";}
+if(drug==="VCM")r="基本：腎機能・体重・TDMに基づき個別設計。トラフ/AUC評価を推奨。";
+if(drug==="その他")r="薬剤名、添付文書、腎機能、感染巣に応じて個別設定。";
+return r+"\n※最新版添付文書・院内採用薬・感染症重症度・TDM・透析条件で最終確認。";
+}
+function updateAntibioticDose(){set("antibioticDose",doseText(val("antibiotics"),val("crcl")))}
+
+function getPatientFromForm(){return{id:val("editId")||uid(),name:val("name"),sex:val("sex"),age:val("age"),referralSource:val("referralSource"),familyDoctor:val("familyDoctor"),diagnosis:val("diagnosis"),isCancer:val("isCancer"),tnmType:val("tnmType"),tClass:val("tClass"),nClass:val("nClass"),mClass:val("mClass"),stage:val("stage"),cancerRules:val("cancerRules"),problem:val("problem"),history:val("history"),status:val("status"),operationDate:val("operationDate"),ecgStatus:val("ecgStatus"),ecgDate:val("ecgDate"),echoStatus:val("echoStatus"),echoDate:val("echoDate"),pftStatus:val("pftStatus"),pftDate:val("pftDate"),ps:val("ps"),asa:val("asa"),adl:val("adl"),frailty:val("frailty"),surgicalRiskNote:val("surgicalRiskNote"),operationName:val("operationName"),plan:val("plan"),labSchedules:getLabSchedules(),diet:val("diet"),dietPlan:val("dietPlan"),creatinine:val("creatinine"),weight:val("weight"),crcl:val("crcl"),antibiotics:val("antibiotics"),antibioticDose:val("antibioticDose"),antibioticStart:val("antibioticStart"),drain:val("drain"),dvt:val("dvt"),dischargeDate:val("dischargeDate"),todo:val("todo"),alerts:val("alerts"),updatedAt:new Date().toLocaleString("ja-JP")}}
+async function savePatient(){formatProblems();const p=getPatientFromForm();if(!p.name.trim()){alert("患者名またはIDを入力してください。");return}if(cancerLikeText(p.diagnosis))p.isCancer="はい";const idx=patients.findIndex(x=>x.id===p.id);if(idx>=0)patients[idx]=p;else patients.unshift(p);selectedId=p.id;await encryptAndSave();updateHistories();clearForm(false);renderList();showDetail(p.id)}
+function clearForm(reset=true){["editId","name","sex","age","referralSource","familyDoctor","diagnosis","problem","history","operationDate","ecgDate","echoDate","pftDate","surgicalRiskNote","operationName","plan","creatinine","weight","crcl","antibioticDose","antibioticStart","dischargeDate","todo","alerts","cancerRules"].forEach(id=>set(id,""));set("isCancer","いいえ");set("tnmType","未設定");set("stage","未設定");set("tClass","TX");set("nClass","NX");set("mClass","MX");set("status","急性期");set("diet","未設定");set("dietPlan","未設定");set("drain","なし");set("dvt","未設定");set("ecgStatus","未設定");set("echoStatus","未設定");set("pftStatus","未設定");set("ps","未設定");set("asa","未設定");set("adl","未設定");set("frailty","未設定");set("antibiotics","");setLabSchedules([{date:"",memo:""}]);toggleCancerFields();toggleSurgeryFields();if(reset){selectedId=null;document.getElementById("detail").innerHTML="患者カードを選択してください。";document.getElementById("detail").className="empty";renderList()}}
+async function deletePatient(){const id=val("editId");if(!id){alert("削除する患者を選択してください。");return}if(!confirm("この患者情報を削除しますか？"))return;patients=patients.filter(p=>p.id!==id);await encryptAndSave();updateHistories();clearForm(true)}
+
+function renderList(){const q=val("search").toLowerCase(),sf=val("statusFilter"),list=document.getElementById("patientList");const fs=patients.filter(p=>{const all=(Object.values(p).join(" ")+JSON.stringify(p.labSchedules||[])+tnmText(p)).toLowerCase();return(!sf||p.status===sf)&&all.includes(q)});if(!fs.length){list.innerHTML='<div class="empty">該当する患者がいません。</div>';return}list.innerHTML=fs.map(p=>`<div class="card ${p.id===selectedId?"active":""}" onclick="selectPatient('${p.id}')"><div class="name">${escapeHtml(p.name)}</div><div class="meta">${escapeHtml(p.age||"")} ${escapeHtml(p.sex||"")}｜${escapeHtml(p.diagnosis||"")}</div><div class="meta">紹介元：${escapeHtml(p.referralSource||"未入力")}｜かかりつけ：${escapeHtml(p.familyDoctor||"未入力")}</div>${tnmText(p)?`<div class="meta">TNM/Stage：${escapeHtml(tnmText(p))}</div>`:""}<div class="meta">プロブレム：${escapeHtml((p.problem||"").split("\n").filter(Boolean)[0]||"未入力")}</div><div class="meta">抗生剤：${escapeHtml(p.antibiotics||"なし")} ${p.antibioticStart?"("+calcAB(p.antibioticStart)+")":""}</div><span class="badge ${escapeHtml(p.status)}">${escapeHtml(p.status)}</span>${p.operationDate?`<span class="badge pod">${escapeHtml(calcPOD(p.operationDate))}</span>`:""}${hasTodayLab(p)?`<span class="badge alert">本日採血</span>`:""}${p.dischargeDate?`<span class="badge ok">退院予定 ${escapeHtml(p.dischargeDate)}</span>`:""}</div>`).join("")}
+function selectPatient(id){selectedId=id;const p=patients.find(x=>x.id===id);if(!p)return;Object.keys(p).forEach(k=>set(k,p[k]));set("editId",p.id);setLabSchedules(p.labSchedules||[]);toggleCancerFields();toggleSurgeryFields();updateAntibioticDose();renderList();showDetail(id)}
+function surgeryTestsText(p){if(!p.operationDate)return"手術日未設定";return`心電図：${p.ecgStatus||"未設定"}　${p.ecgDate||""}\n心エコー：${p.echoStatus||"未設定"}　${p.echoDate||""}\n呼吸機能検査：${p.pftStatus||"未設定"}　${p.pftDate||""}`}
+function riskText(p){return`PS：${p.ps||"未設定"}\nASA-PS：${p.asa||"未設定"}\nADL：${p.adl||"未設定"}\nフレイル：${p.frailty||"未設定"}\n${p.surgicalRiskNote||""}`}
+function showDetail(id){const p=patients.find(x=>x.id===id);if(!p)return;document.getElementById("detail").className="";document.getElementById("detail").innerHTML=`<div class="detail"><div class="box"><h3>基本情報</h3><div class="pre"><b>${escapeHtml(p.name)}</b>\n${escapeHtml(p.age||"")} ${escapeHtml(p.sex||"")}\n主病名：${escapeHtml(p.diagnosis||"")}\n紹介元：${escapeHtml(p.referralSource||"未入力")}\nかかりつけ：${escapeHtml(p.familyDoctor||"未入力")}\n状態：${escapeHtml(p.status||"")}\n更新：${escapeHtml(p.updatedAt||"")}</div></div><div class="box"><h3>TNM / Stage</h3><div class="pre">${escapeHtml(tnmText(p)||"非癌または未入力")}\n規約：${escapeHtml(p.cancerRules||"未入力")}</div></div><div class="box"><h3>プロブレム</h3><div class="pre">${escapeHtml(p.problem||"未入力")}</div></div><div class="box"><h3>POD / 手術</h3><div class="pre">手術日：${escapeHtml(p.operationDate||"未設定")}\n${p.operationDate?calcPOD(p.operationDate):"未設定"}\n手術名：${escapeHtml(p.operationName||"未入力")}\n${escapeHtml(p.plan||"")}</div></div><div class="box"><h3>耐術能評価</h3><div class="pre">${escapeHtml(riskText(p))}</div></div><div class="box"><h3>術前検査</h3><div class="pre">${escapeHtml(surgeryTestsText(p))}</div></div><div class="box"><h3>採血日程</h3><div class="pre">${escapeHtml(labText(p))}</div></div><div class="box"><h3>CrCl / 抗生剤</h3><div class="pre">Cre：${escapeHtml(p.creatinine||"未入力")} mg/dL\n体重：${escapeHtml(p.weight||"未入力")} kg\nCrCl：${escapeHtml(p.crcl||"未入力")} mL/min\n抗生剤：${escapeHtml(p.antibiotics||"なし")}\n開始日：${escapeHtml(p.antibioticStart||"未設定")} ${p.antibioticStart?calcAB(p.antibioticStart):""}\n${escapeHtml(p.antibioticDose||"")}</div></div><div class="box"><h3>食上げ管理</h3><div class="pre">現在：${escapeHtml(p.diet||"未設定")}\n予定：${escapeHtml(p.dietPlan||"未設定")}</div></div><div class="box"><h3>退院予定</h3><div class="pre">退院予定日：${escapeHtml(p.dischargeDate||"未設定")}</div></div><div class="box"><h3>既往歴</h3><div class="pre">${escapeHtml(p.history||"未入力")}</div></div><div class="box"><h3>管理</h3><div class="pre">ドレーン：${escapeHtml(p.drain||"未設定")}\nDVT予防：${escapeHtml(p.dvt||"未設定")}</div></div><div class="box"><h3>本日のToDo / 注意</h3><div class="pre">${escapeHtml(p.todo||"未入力")}\n\n注意：${escapeHtml(p.alerts||"未入力")}</div></div></div>`}
+
+function gatherEvents(){const events=[];patients.forEach(p=>{(Array.isArray(p.labSchedules)?p.labSchedules:[]).forEach(l=>{if(l.date)events.push({date:l.date,type:"lab",label:`採血：${p.name} ${l.memo||""}`})});if(p.operationDate)events.push({date:p.operationDate,type:"op",label:`手術：${p.name}`});if(p.dischargeDate)events.push({date:p.dischargeDate,type:"dis",label:`退院：${p.name}`});if(p.ecgDate)events.push({date:p.ecgDate,type:"test",label:`心電図：${p.name}`});if(p.echoDate)events.push({date:p.echoDate,type:"test",label:`心エコー：${p.name}`});if(p.pftDate)events.push({date:p.pftDate,type:"test",label:`呼吸機能：${p.name}`})});return events}
+function showCalendar(){const y=calendarDate.getFullYear(),m=calendarDate.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),startDay=first.getDay(),days=last.getDate(),events=gatherEvents();let html=`<div class="calnav"><button class="gray" onclick="moveMonth(-1)">前月</button><h2>${y}年${m+1}月 カレンダー</h2><button class="gray" onclick="moveMonth(1)">翌月</button></div><div class="calendar">`;["日","月","火","水","木","金","土"].forEach(d=>html+=`<div class="calhead">${d}</div>`);for(let i=0;i<startDay;i++)html+=`<div class="day"></div>`;for(let d=1;d<=days;d++){const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,dayEvents=events.filter(e=>e.date===ds);html+=`<div class="day"><div class="daynum">${d}</div>`;dayEvents.forEach(e=>{const cls=e.type==="lab"?"ev-lab":e.type==="op"?"ev-op":e.type==="dis"?"ev-dis":"ev-test";html+=`<span class="event ${cls}">${escapeHtml(e.label)}</span>`});html+=`</div>`}html+=`</div>`;document.getElementById("detail").className="";document.getElementById("detail").innerHTML=html}
+function moveMonth(delta){calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+delta,1);showCalendar()}
+function showLabList(){const rows=[];patients.forEach(p=>(p.labSchedules||[]).forEach(l=>{if(l.date)rows.push({date:l.date,name:p.name,dx:p.diagnosis,memo:l.memo})}));rows.sort((a,b)=>a.date.localeCompare(b.date));const text=rows.map(r=>`【${r.date}】${r.name} / ${r.dx||""}\n${r.memo||""}`).join("\n\n---\n\n");document.getElementById("detail").className="";document.getElementById("detail").innerHTML=`<h2>採血予定一覧</h2><div class="memo">${escapeHtml(text||"採血予定がありません。")}</div>`}
+function showDischargeList(){const sorted=patients.filter(p=>p.dischargeDate).sort((a,b)=>a.dischargeDate.localeCompare(b.dischargeDate));const text=sorted.map(p=>`【${p.dischargeDate}】${p.name} / ${p.diagnosis||""} ${p.operationDate?"("+calcPOD(p.operationDate)+")":""}\nプロブレム：${p.problem||"未入力"}\n食事：${p.diet||"未設定"}\nToDo：${p.todo||"なし"}\n注意：${p.alerts||"なし"}`).join("\n\n---\n\n");document.getElementById("detail").className="";document.getElementById("detail").innerHTML=`<h2>退院予定一覧</h2><div class="memo">${escapeHtml(text||"退院予定日の登録がありません。")}</div>`}
+function exportData(){if(!confirm("CSVファイルは暗号化されません。出力しますか？"))return;const header=["患者名またはID","性別","年齢","紹介元","かかりつけ","主病名","癌症例","TNM種別","T","N","M","Stage","取扱い規約/版","プロブレム","既往歴","状態","手術日","POD","手術名","PS","ASA","ADL","フレイル","耐術能メモ","術前心電図","心電図日","術前心エコー","心エコー日","呼吸機能","呼吸機能日","採血日程","食事","食上げ予定","Cre","体重","CrCl","抗生剤","用量表示","抗生剤開始日","抗生剤日数","ドレーン","DVT予防","退院予定日","ToDo","注意事項","更新日時"];const rows=patients.map(p=>[p.name,p.sex,p.age,p.referralSource,p.familyDoctor,p.diagnosis,p.isCancer,p.tnmType,p.tClass,p.nClass,p.mClass,p.stage,p.cancerRules,p.problem,p.history,p.status,p.operationDate,calcPOD(p.operationDate),p.operationName,p.ps,p.asa,p.adl,p.frailty,p.surgicalRiskNote,p.ecgStatus,p.ecgDate,p.echoStatus,p.echoDate,p.pftStatus,p.pftDate,labText(p),p.diet,p.dietPlan,p.creatinine,p.weight,p.crcl,p.antibiotics,p.antibioticDose,p.antibioticStart,calcAB(p.antibioticStart),p.drain,p.dvt,p.dischargeDate,p.todo,p.alerts,p.updatedAt]);const csv=[header,...rows].map(row=>row.map(v=>`"${String(v||"").replaceAll('"','""')}"`).join(",")).join("\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="surgery_patients_decrypted.csv";a.click()}
+function escapeHtml(str){return String(str||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+setLabSchedules([{date:"",memo:""}]);loadPatients();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
